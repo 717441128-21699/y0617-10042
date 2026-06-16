@@ -6,9 +6,9 @@ import {
   CloseOutlined,
   FileOutlined,
   FileImageOutlined,
-  FileVideoOutlined,
+  VideoCameraOutlined,
   FilePdfOutlined,
-  FileAudioOutlined
+  AudioOutlined
 } from '@ant-design/icons';
 import { previewApi } from '../api';
 import { formatFileSize } from '../utils/path';
@@ -16,9 +16,9 @@ import { formatFileSize } from '../utils/path';
 const getPreviewIcon = (previewType) => {
   switch (previewType) {
     case 'image': return <FileImageOutlined style={{ fontSize: 64, color: '#1890ff' }} />;
-    case 'video': return <FileVideoOutlined style={{ fontSize: 64, color: '#722ed1' }} />;
+    case 'video': return <VideoCameraOutlined style={{ fontSize: 64, color: '#722ed1' }} />;
     case 'pdf': return <FilePdfOutlined style={{ fontSize: 64, color: '#f5222d' }} />;
-    case 'audio': return <FileAudioOutlined style={{ fontSize: 64, color: '#52c41a' }} />;
+    case 'audio': return <AudioOutlined style={{ fontSize: 64, color: '#52c41a' }} />;
     default: return <FileOutlined style={{ fontSize: 64, color: '#8c8c8c' }} />;
   }
 };

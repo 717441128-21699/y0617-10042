@@ -252,7 +252,7 @@ router.post('/folder', async (req, res) => {
     
     const info = await stmt.run(name, normalizedPath, parentId);
     
-    logOperation('create_folder', info.lastInsertRowid, name, {
+    await logOperation('create_folder', info.lastInsertRowid, name, {
       path: normalizedPath
     }, req);
     
@@ -356,7 +356,7 @@ router.put('/:id/move', async (req, res) => {
             SET path = ?, updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
           `);
-          await updateChildStmt.run(newParentPath, child.id);
+          await updateChildStmt.run(childNewPath, child.id);
           
           if (child.type === 'folder') {
             await updateChildren(joinPath(parentPath, child.name), childNewPath, child.id);
@@ -367,7 +367,7 @@ router.put('/:id/move', async (req, res) => {
       await updateChildren(oldPath, newPath, id);
     }
     
-    logOperation('move', id, file.name, {
+    await logOperation('move', id, file.name, {
       from: oldPath,
       to: newPath
     }, req);
@@ -460,7 +460,7 @@ router.put('/:id/rename', async (req, res) => {
       await updateChildren(oldPath, newPath, id);
     }
     
-    logOperation('rename', id, name, {
+    await logOperation('rename', id, name, {
       oldName,
       newName: name,
       path: file.path
@@ -548,7 +548,7 @@ router.delete('/:id', async (req, res) => {
       }
     }
     
-    logOperation('delete', id, file.name, {
+    await logOperation('delete', id, file.name, {
       type: file.type,
       path: file.path
     }, req);

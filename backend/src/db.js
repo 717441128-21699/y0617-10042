@@ -88,12 +88,39 @@ function executeQuery(sql, params, mode) {
   return null;
 }
 
+function normalizeItem(table, item) {
+  const now = new Date().toISOString();
+  const normalized = { ...item };
+  
+  if (table === 'files') {
+    if (normalized.deleted === undefined) normalized.deleted = 0;
+    if (normalized.created_at === undefined) normalized.created_at = now;
+    if (normalized.updated_at === undefined) normalized.updated_at = now;
+    if (normalized.size === undefined) normalized.size = 0;
+  } else if (table === 'shares') {
+    if (normalized.view_count === undefined) normalized.view_count = 0;
+    if (normalized.download_count === undefined) normalized.download_count = 0;
+    if (normalized.created_at === undefined) normalized.created_at = now;
+    if (normalized.updated_at === undefined) normalized.updated_at = now;
+    if (normalized.revoked === undefined) normalized.revoked = 0;
+  } else if (table === 'upload_tasks') {
+    if (normalized.uploaded_chunks === undefined) normalized.uploaded_chunks = '[]';
+    if (normalized.status === undefined) normalized.status = 'pending';
+    if (normalized.created_at === undefined) normalized.created_at = now;
+    if (normalized.updated_at === undefined) normalized.updated_at = now;
+  }
+  
+  return normalized;
+}
+
 function handleSelect(sql, params, mode) {
   const tableMatch = sql.match(/FROM\s+(\w+)/i);
   if (!tableMatch) return mode === 'all' ? [] : null;
   
   const table = tableMatch[1];
   let data = [...db.data[table]];
+
+  data = data.map(item => normalizeItem(table, item));
   
   const whereMatch = sql.match(/WHERE\s+(.+?)(?:\s+ORDER|\s+LIMIT|$)/is);
   
@@ -173,7 +200,7 @@ function evaluateCondition(item, conditions, params, getNextParam) {
       }
     }
     
-    const match = cond.match(/(\w+)\s*(=|!=|<>|>|<|>=|<=|LIKE)\s*(.+)/i);
+    const match = cond.match(/(\w+)\s*(>=|<=|!=|<>|=|>|<|LIKE)\s*(.+)/i);
     if (!match) return true;
     
     const field = match[1];
@@ -259,7 +286,29 @@ function handleInsert(sql, params) {
   if (!newItem.id) {
     newItem.id = getNextId(table);
   }
+
+  const now = new Date().toISOString();
   
+  if (table === 'files') {
+    if (newItem.deleted === undefined) newItem.deleted = 0;
+    if (newItem.created_at === undefined) newItem.created_at = now;
+    if (newItem.updated_at === undefined) newItem.updated_at = now;
+    if (newItem.size === undefined) newItem.size = 0;
+  } else if (table === 'shares') {
+    if (newItem.view_count === undefined) newItem.view_count = 0;
+    if (newItem.download_count === undefined) newItem.download_count = 0;
+    if (newItem.created_at === undefined) newItem.created_at = now;
+    if (newItem.updated_at === undefined) newItem.updated_at = now;
+    if (newItem.revoked === undefined) newItem.revoked = 0;
+  } else if (table === 'operation_logs') {
+    if (newItem.created_at === undefined) newItem.created_at = now;
+  } else if (table === 'upload_tasks') {
+    if (newItem.uploaded_chunks === undefined) newItem.uploaded_chunks = '[]';
+    if (newItem.status === undefined) newItem.status = 'pending';
+    if (newItem.created_at === undefined) newItem.created_at = now;
+    if (newItem.updated_at === undefined) newItem.updated_at = now;
+  }
+
   db.data[table].push(newItem);
   
   return {
@@ -289,7 +338,8 @@ function handleUpdate(sql, params) {
   
   data.forEach(item => {
     let pIndex = 0;
-    const shouldUpdate = !conditions || evaluateCondition(item, conditions, params, () => pIndex++);
+    const normalizedItem = normalizeItem(table, item);
+    const shouldUpdate = !conditions || evaluateCondition(normalizedItem, conditions, params, () => pIndex++);
     
     if (shouldUpdate) {
       setClauses.forEach(({ field, value }) => {
@@ -344,7 +394,8 @@ function handleDelete(sql, params) {
   } else {
     db.data[table] = db.data[table].filter(item => {
       paramIndex = 0;
-      return !evaluateCondition(item, conditions, params, () => paramIndex++);
+      const normalizedItem = normalizeItem(table, item);
+      return !evaluateCondition(normalizedItem, conditions, params, () => paramIndex++);
     });
   }
   

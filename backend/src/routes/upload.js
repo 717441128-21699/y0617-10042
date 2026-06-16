@@ -133,7 +133,7 @@ router.post('/check-md5', async (req, res) => {
       
       await db.prepare('DELETE FROM upload_tasks WHERE file_md5 = ?').run(md5);
       
-      logOperation('quick_upload', info.lastInsertRowid, targetFileName, {
+      await logOperation('quick_upload', info.lastInsertRowid, targetFileName, {
         size: existingFile.size,
         md5,
         targetPath
@@ -323,57 +323,69 @@ router.post('/complete', async (req, res) => {
     }
     
     writeStream.end();
-
-    const fileHash = crypto.createHash('md5');
-    const fileStream = fs.createReadStream(storageFilePath);
     
-    fileStream.on('data', (data) => fileHash.update(data));
-    fileStream.on('end', async () => {
-      const computedMd5 = fileHash.digest('hex');
+    writeStream.on('finish', async () => {
+      const fileHash = crypto.createHash('md5');
+      const fileStream = fs.createReadStream(storageFilePath);
       
-      if (computedMd5 !== md5) {
-        fs.removeSync(storageFilePath);
-        fs.removeSync(chunkDir);
-        await db.prepare('UPDATE upload_tasks SET status = ? WHERE id = ?').run('failed', task.id);
-        return res.status(500).json({ error: 'MD5 verification failed' });
-      }
+      fileStream.on('data', (data) => fileHash.update(data));
+      fileStream.on('end', async () => {
+        const computedMd5 = fileHash.digest('hex');
+        
+        if (computedMd5 !== md5) {
+          fs.removeSync(storageFilePath);
+          fs.removeSync(chunkDir);
+          await db.prepare('UPDATE upload_tasks SET status = ? WHERE id = ?').run('failed', task.id);
+          return res.status(500).json({ error: 'MD5 verification failed' });
+        }
 
-      await ensureFoldersExist(targetPath);
-      const parentId = await getParentId(targetPath);
-      const fileSize = fs.statSync(storageFilePath).size;
+        await ensureFoldersExist(targetPath);
+        const parentId = await getParentId(targetPath);
+        const fileSize = fs.statSync(storageFilePath).size;
 
-      const insertStmt = db.prepare(`
-        INSERT INTO files (name, path, type, size, md5, parent_id, storage_path)
-        VALUES (?, ?, 'file', ?, ?, ?, ?)
-      `);
+        const insertStmt = db.prepare(`
+          INSERT INTO files (name, path, type, size, md5, parent_id, storage_path)
+          VALUES (?, ?, 'file', ?, ?, ?, ?)
+        `);
 
-      const info = await insertStmt.run(
-        task.file_name,
-        targetPath,
-        fileSize,
-        md5,
-        parentId,
-        storageFilePath
-      );
+        const info = await insertStmt.run(
+          task.file_name,
+          targetPath,
+          fileSize,
+          md5,
+          parentId,
+          storageFilePath
+        );
 
-      await db.prepare('UPDATE upload_tasks SET status = ? WHERE id = ?').run('completed', task.id);
-      
-      setTimeout(() => {
-        try { fs.removeSync(chunkDir); } catch (e) {}
-      }, 5000);
+        await db.prepare('UPDATE upload_tasks SET status = ? WHERE id = ?').run('completed', task.id);
+        
+        setTimeout(() => {
+          try { fs.removeSync(chunkDir); } catch (e) {}
+        }, 5000);
 
-      logOperation('upload', info.lastInsertRowid, task.file_name, {
-        size: fileSize,
-        md5,
-        targetPath
-      }, req);
+        await logOperation('upload', info.lastInsertRowid, task.file_name, {
+          size: fileSize,
+          md5,
+          targetPath
+        }, req);
 
-      res.json({
-        success: true,
-        fileId: info.lastInsertRowid,
-        fileName: task.file_name,
-        size: fileSize
+        res.json({
+          success: true,
+          fileId: info.lastInsertRowid,
+          fileName: task.file_name,
+          size: fileSize
+        });
       });
+      
+      fileStream.on('error', (err) => {
+        console.error('File read error:', err);
+        res.status(500).json({ error: err.message });
+      });
+    });
+    
+    writeStream.on('error', (err) => {
+      console.error('File write error:', err);
+      res.status(500).json({ error: err.message });
     });
 
   } catch (error) {

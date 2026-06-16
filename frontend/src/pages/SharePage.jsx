@@ -5,9 +5,9 @@ import {
   DownloadOutlined,
   FileOutlined,
   FileImageOutlined,
-  FileVideoOutlined,
+  VideoCameraOutlined,
   FilePdfOutlined,
-  FileAudioOutlined,
+  AudioOutlined,
   HomeOutlined,
   CloudOutlined
 } from '@ant-design/icons';
@@ -22,8 +22,8 @@ const getPreviewIcon = (name, type) => {
   const audioExts = ['mp3', 'wav', 'ogg', 'm4a', 'flac', 'aac'];
   
   if (imageExts.includes(ext)) return <FileImageOutlined style={{ fontSize: 64, color: '#1890ff' }} />;
-  if (videoExts.includes(ext)) return <FileVideoOutlined style={{ fontSize: 64, color: '#722ed1' }} />;
-  if (audioExts.includes(ext)) return <FileAudioOutlined style={{ fontSize: 64, color: '#52c41a' }} />;
+  if (videoExts.includes(ext)) return <VideoCameraOutlined style={{ fontSize: 64, color: '#722ed1' }} />;
+  if (audioExts.includes(ext)) return <AudioOutlined style={{ fontSize: 64, color: '#52c41a' }} />;
   if (ext === 'pdf') return <FilePdfOutlined style={{ fontSize: 64, color: '#f5222d' }} />;
   return <FileOutlined style={{ fontSize: 64, color: '#8c8c8c' }} />;
 };
@@ -44,7 +44,7 @@ function SharePage() {
         setShareInfo(res.data);
         
         if (res.data.type !== 'folder') {
-          setPreviewUrl(previewApi.getContentUrl(res.data.fileId));
+          setPreviewUrl(`${previewApi.getContentUrl(res.data.fileId)}?token=${token}`);
         }
       } catch (e) {
         if (e.response?.status === 410) {
@@ -63,7 +63,7 @@ function SharePage() {
   }, [token]);
 
   const handleDownload = () => {
-    window.open(shareApi.downloadShare(token));
+    window.open(`/api/preview/${shareInfo?.fileId}/download?token=${token}`);
   };
 
   const getPreviewType = (name) => {
@@ -220,12 +220,12 @@ function SharePage() {
         <Card>
           <div style={{ marginBottom: 16 }}>
             <Space>
-              {shareInfo.expireAt ? (
-                dayjs(shareInfo.expireAt) < dayjs() ? (
+              {shareInfo.expire_at ? (
+                dayjs(shareInfo.expire_at) < dayjs() ? (
                   <Tag color="red">已过期</Tag>
                 ) : (
                   <Tag color="orange">
-                    有效期至 {dayjs(shareInfo.expireAt).format('YYYY-MM-DD HH:mm')}
+                    有效期至 {dayjs(shareInfo.expire_at).format('YYYY-MM-DD HH:mm')}
                   </Tag>
                 )
               ) : (
@@ -257,7 +257,7 @@ function SharePage() {
                 {shareInfo.name}
               </div>
               <div style={{ color: '#999', fontSize: 13 }}>
-                {formatFileSize(shareInfo.size)} · {dayjs(shareInfo.expireAt || shareInfo.createdAt).format('YYYY-MM-DD')}
+                {formatFileSize(shareInfo.size)} · {dayjs(shareInfo.expire_at || shareInfo.createdAt).format('YYYY-MM-DD')}
               </div>
             </div>
             <Button 

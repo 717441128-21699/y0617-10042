@@ -3,7 +3,7 @@ import { Breadcrumb, Button, Input, Modal, message, Space } from 'antd';
 import {
   UploadOutlined,
   FolderAddOutlined,
-  RefreshOutlined,
+  ReloadOutlined,
   DeleteOutlined,
   DownloadOutlined,
   ShareAltOutlined,
@@ -119,7 +119,7 @@ function FileManager() {
             新建文件夹
           </Button>
           <Button
-            icon={<RefreshOutlined />}
+            icon={<ReloadOutlined />}
             onClick={refresh}
             loading={loading}
           >

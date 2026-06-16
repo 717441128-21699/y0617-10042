@@ -4,16 +4,16 @@ import {
   FolderOutlined, 
   FileOutlined, 
   FileImageOutlined,
-  FileVideoOutlined,
+  VideoCameraOutlined,
   FilePdfOutlined,
-  FileAudioOutlined,
+  AudioOutlined,
   MoreOutlined,
   EditOutlined,
   DeleteOutlined,
   ShareAltOutlined,
   DownloadOutlined,
   EyeOutlined,
-  MoveOutlined
+  SwapOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import useStore from '../store';
@@ -26,9 +26,9 @@ const getFileIcon = (name, type) => {
   
   if (type === 'folder') return <FolderOutlined className={`file-icon ${iconClass}`} />;
   if (iconClass === 'image-icon') return <FileImageOutlined className={`file-icon ${iconClass}`} />;
-  if (iconClass === 'video-icon') return <FileVideoOutlined className={`file-icon ${iconClass}`} />;
+  if (iconClass === 'video-icon') return <VideoCameraOutlined className={`file-icon ${iconClass}`} />;
   if (iconClass === 'pdf-icon') return <FilePdfOutlined className={`file-icon ${iconClass}`} />;
-  if (iconClass === 'audio-icon') return <FileAudioOutlined className={`file-icon ${iconClass}`} />;
+  if (iconClass === 'audio-icon') return <AudioOutlined className={`file-icon ${iconClass}`} />;
   return <FileOutlined className={`file-icon ${iconClass}`} />;
 };
 
@@ -128,7 +128,7 @@ function FileList({ onPreview, onShare, onMove }) {
           </Menu.Item>
         </>
       )}
-      <Menu.Item key="move" icon={<MoveOutlined />} onClick={() => onMove(record)}>
+      <Menu.Item key="move" icon={<SwapOutlined />} onClick={() => onMove(record)}>
         移动到
       </Menu.Item>
       <Menu.Item key="rename" icon={<EditOutlined />} onClick={() => handleRename(record)}>
